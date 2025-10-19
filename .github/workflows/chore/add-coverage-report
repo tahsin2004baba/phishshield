@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest pytest-cov
+      # Run tests with coverage. This prints a summary AND generates HTML + XML.
+      - run: |
+          pytest --cov=. \
+                 --cov-report=term-missing \
+                 --cov-report=xml \
+                 --cov-report=html
+      # Upload the HTML coverage folder so you can download it
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml

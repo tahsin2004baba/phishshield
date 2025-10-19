@@ -2,6 +2,7 @@ name: CI
 on:
   push:
   pull_request:
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,5 +11,45 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install pytest pytest-cov
-      - run: pytest --maxfail=1 --disable-warnings -q
+      - name: Install test deps
+        run: pip install pytest pytest-cov
+
+      # Run tests and generate coverage: terminal + XML + HTML
+      - name: Run pytest with coverage
+        run: |
+          pytest --cov=. \
+                 --cov-report=term-missing \
+                 --cov-report=xml \
+                 --cov-report=html | tee pytest-log.txt
+
+      # Debug: prove the htmlcov folder exists
+      - name: List coverage outputs
+        run: |
+          echo "---- files in repo ----"
+          ls -la
+          echo "---- htmlcov ----"
+          ls -la htmlcov || true
+
+      # Upload artifacts (HTML report + XML + the pytest log)
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/**
+          retention-days: 7
+
+      - name: Upload coverage XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+      - name: Upload pytest log (has TOTAL %)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: pytest-log.txt
+
